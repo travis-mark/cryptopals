@@ -19,6 +19,29 @@ defmodule Cryptopals do
     |> Base.encode64()
   end
 
+  @doc """
+  Takes two equal-length buffers and produces their XOR combination.
+
+  ## Examples
+
+      iex> Cryptopals.fixed_xor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965")
+      "746865206b696420646f6e277420706c6179"
+  """
+  def fixed_xor(hex1, hex2) do
+    binary1 = hex1
+    |> String.replace(~r/\s/, "")
+    |> Base.decode16!(case: :mixed)
+    |> :binary.decode_unsigned
+    binary2 = hex2
+    |> String.replace(~r/\s/, "")
+    |> Base.decode16!(case: :mixed)
+    |> :binary.decode_unsigned
+    Bitwise.bxor(binary1, binary2)
+    |> :binary.encode_unsigned
+    |> Base.encode16()
+    |> String.downcase() # Causes test to pass, not sure if I want
+  end
+
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
   end

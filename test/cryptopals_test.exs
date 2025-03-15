@@ -17,4 +17,21 @@ defmodule CryptopalsTest do
              "Failed for input: #{input}, got: #{output}, expected: #{expected}"
     end
   end
+
+  test "Fixed xor" do
+    cases = [
+      {
+        "1c0111001f010100061a024b53535009181c",
+        "686974207468652062756c6c277320657965",
+        "746865206b696420646f6e277420706c6179"
+      }
+    ]
+
+    for {input1, input2, expected} <- cases do
+      output = Cryptopals.fixed_xor(input1, input2)
+
+      assert output == expected,
+             "Failed for input: #{input1} ^ #{input2}, got: #{output}, expected: #{expected}"
+    end
+  end
 end
