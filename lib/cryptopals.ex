@@ -1,43 +1,55 @@
 defmodule Cryptopals do
   @moduledoc """
-  Documentation for `Cryptopals`.
+  Rules:
+  - Always operate on raw bytes, never on encoded strings. Functions that take hex strings for solving puzzles are prefixed `hex_`
   """
 
-  def hex_string_to_binary(hex_string) do
+  @doc """
+  Convert hex to binary for processing.
+
+  ## Examples
+
+      iex> Cryptopals.hex_to_binary("68656c6c6f")
+      "hello"
+      iex> Cryptopals.hex_to_binary("68656c6c6f00") # \0 to force binary output
+      <<104, 101, 108, 108, 111, 0>>
+  """
+  def hex_to_binary(hex_string) do
     hex_string
     |> String.replace(~r/\s/, "")
     |> Base.decode16!(case: :mixed)
   end
 
   @doc """
+  [Set 1 / Challenge 1](https://cryptopals.com/sets/1/challenges/1)
   Convert a hex string to a base64 one.
 
   ## Examples
 
       iex> Cryptopals.hex_to_base64("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d")
       "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
-
   """
   def hex_to_base64(hex_string) do
     hex_string
-    |> hex_string_to_binary
+    |> hex_to_binary
     |> Base.encode64()
   end
 
   @doc """
-  Takes two equal-length buffers and produces their XOR combination.
+  [Set 1 / Challenge 2](https://cryptopals.com/sets/1/challenges/2)
+  Takes two equal-length hex strings and produces their XOR combination.
 
   ## Examples
 
-      iex> Cryptopals.fixed_xor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965")
+      iex> Cryptopals.hex_fixed_xor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965")
       "746865206b696420646f6e277420706c6179"
   """
-  def fixed_xor(hex1, hex2) do
+  def hex_fixed_xor(hex1, hex2) do
     binary1 = hex1
-    |> hex_string_to_binary
+    |> hex_to_binary
     |> :binary.decode_unsigned
     binary2 = hex2
-    |> hex_string_to_binary
+    |> hex_to_binary
     |> :binary.decode_unsigned
     Bitwise.bxor(binary1, binary2)
     |> :binary.encode_unsigned
@@ -45,6 +57,14 @@ defmodule Cryptopals do
     |> String.downcase() # Causes test to pass, not sure if I want
   end
 
+  @doc """
+  XOR a string against a single byte
+
+  ## Examples
+
+      iex> "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736" |> Cryptopals.hex_to_binary |> Cryptopals.single_byte_xor(88)
+      "Cooking MC's like a pound of bacon"
+  """
   def single_byte_xor(binary, cipher) do
     bytes = byte_size(binary)
     input = binary |> :binary.decode_unsigned
@@ -92,7 +112,7 @@ defmodule Cryptopals do
 
   @doc """
   [Set 1 / Challenge 3](https://cryptopals.com/sets/1/challenges/3)
-  Given a hex encoded string, test for single character key.
+  Given a hex encoded string, test for a single character key.
 
   ## Examples
 
@@ -100,7 +120,7 @@ defmodule Cryptopals do
       {88, "Cooking MC's like a pound of bacon"}
   """
   def single_byte_xor_cipher(hex_string) do
-    binary = hex_string |> hex_string_to_binary
+    binary = hex_string |> hex_to_binary
     candidate = 0..255
     |> Enum.map(fn char ->
       output = single_byte_xor(binary, char)
@@ -118,15 +138,15 @@ defmodule Cryptopals do
 
   @doc """
   [Set 1 / Challenge 4](https://cryptopals.com/sets/1/challenges/4)
-  Given a hex encoded string, test for single character key.
+  Detect single-character XOR in a file.
 
   ## Examples
 
-      iex> Cryptopals.single_byte_xor_cipher("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
-      {88, "Cooking MC's like a pound of bacon"}
+      iex> Cryptopals.detect_single_character_xor_cypher_in_path("priv/4.txt")
+      [{53, "Now that the party is jumping\\n"}]
   """
-  def detect_single_character_xor_cypher() do
-    File.stream!("priv/4.txt")
+  def detect_single_character_xor_cypher_in_path(path) do
+    File.stream!(path)
     |> Enum.map(&Cryptopals.single_byte_xor_cipher/1)
     |> Enum.filter(fn {_, output} -> is_english(output) end)
   end
