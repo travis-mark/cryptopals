@@ -112,6 +112,25 @@ defmodule Cryptopals do
     {key, output}
   end
 
+  def is_english(binary) do
+    score_binary_for_english(binary) > 0
+  end
+
+  @doc """
+  [Set 1 / Challenge 4](https://cryptopals.com/sets/1/challenges/4)
+  Given a hex encoded string, test for single character key.
+
+  ## Examples
+
+      iex> Cryptopals.single_byte_xor_cipher("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+      {88, "Cooking MC's like a pound of bacon"}
+  """
+  def detect_single_character_xor_cypher() do
+    File.stream!("priv/4.txt")
+    |> Enum.map(&Cryptopals.single_byte_xor_cipher/1)
+    |> Enum.filter(fn {_, output} -> is_english(output) end)
+  end
+
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
   end

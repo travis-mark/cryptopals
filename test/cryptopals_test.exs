@@ -20,4 +20,9 @@ defmodule CryptopalsTest do
     expected = {88, "Cooking MC's like a pound of bacon"}
     assert Cryptopals.single_byte_xor_cipher(input) == expected, "Single-byte XOR cipher failed"
   end
+
+  test "Detect single-character XOR" do
+    expected = [{53, "Now that the party is jumping\n"}]
+    assert Cryptopals.detect_single_character_xor_cypher == expected, "Detect single-character XOR failed"
+  end
 end
