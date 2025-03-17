@@ -151,6 +151,23 @@ defmodule Cryptopals do
     |> Enum.filter(fn {_, output} -> is_english(output) end)
   end
 
+  @doc """
+  [Set 1 / Challenge 5](https://cryptopals.com/sets/1/challenges/5)
+  XOR a binary against a cypher by repeating it.
+
+  ## Examples
+
+      iex> Cryptopals.repeating_key_xor("Burning 'em, if you ain't quick and nimble\\nI go crazy when I hear a cymbal", "ICE") |> Base.encode16(case: :lower)
+      "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+  """
+  def repeating_key_xor(binary, cypher) do
+    bytelist = binary |> :binary.bin_to_list()
+    cycle = cypher |> :binary.bin_to_list() |> Stream.cycle()
+    Enum.zip(bytelist, cycle)
+    |> Enum.map(fn {left, right} -> Bitwise.bxor(left, right) end)
+    |> :binary.list_to_bin()
+  end
+
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
   end
