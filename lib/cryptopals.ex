@@ -1,69 +1,37 @@
 defmodule Cryptopals do
   @moduledoc """
-  Rules:
-  - Always operate on raw bytes, never on encoded strings. Functions that take hex strings for solving puzzles are prefixed `hex_`
   """
 
   @doc """
+  Cryptopals Rule: Always operate on raw bytes, never on encoded strings.
+
   Convert hex to binary for processing.
 
   ## Examples
 
-      iex> Cryptopals.hex_to_binary("68656c6c6f")
+      iex> Cryptopals.decodeHex("68656c6c6f")
       "hello"
-      iex> Cryptopals.hex_to_binary("68656c6c6f00") # \0 to force binary output
+      iex> Cryptopals.decodeHex("68656c6c6f00") # \0 to force binary output
       <<104, 101, 108, 108, 111, 0>>
   """
-  def hex_to_binary(hex_string) do
-    hex_string
+  def decodeHex(string) do
+    string
     |> String.replace(~r/\s/, "")
     |> Base.decode16!(case: :mixed)
   end
 
   @doc """
-  Convert base64 to binary for processing.
-  """
-  def base64_to_binary(hex_string) do
-    hex_string
-    |> String.replace(~r/\s/, "")
-    |> Base.decode64!()
-  end
-
-  @doc """
-  [Set 1 / Challenge 1](https://cryptopals.com/sets/1/challenges/1)
-  Convert a hex string to a base64 one.
+  Takes two equal-length strings and produces their XOR combination.
 
   ## Examples
 
-      iex> Cryptopals.hex_to_base64("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d")
-      "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
+      iex> Cryptopals.fixedXor("heat", "XUQD")
+      "0000"
   """
-  def hex_to_base64(hex_string) do
-    hex_string
-    |> hex_to_binary
-    |> Base.encode64()
-  end
-
-  @doc """
-  [Set 1 / Challenge 2](https://cryptopals.com/sets/1/challenges/2)
-  Takes two equal-length hex strings and produces their XOR combination.
-
-  ## Examples
-
-      iex> Cryptopals.hex_fixed_xor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965")
-      "746865206b696420646f6e277420706c6179"
-  """
-  def hex_fixed_xor(hex1, hex2) do
-    binary1 = hex1
-    |> hex_to_binary
-    |> :binary.decode_unsigned
-    binary2 = hex2
-    |> hex_to_binary
-    |> :binary.decode_unsigned
-    Bitwise.bxor(binary1, binary2)
-    |> :binary.encode_unsigned
-    |> Base.encode16()
-    |> String.downcase() # Causes test to pass, not sure if I want
+  def fixedXor(left, right) do
+    binary1 = left |> :binary.decode_unsigned()
+    binary2 = right |> :binary.decode_unsigned()
+    Bitwise.bxor(binary1, binary2) |> :binary.encode_unsigned()
   end
 
   @doc """
@@ -71,14 +39,14 @@ defmodule Cryptopals do
 
   ## Examples
 
-      iex> "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736" |> Cryptopals.hex_to_binary |> Cryptopals.single_byte_xor(88)
+      iex> "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736" |> Cryptopals.decodeHex() |> Cryptopals.single_byte_xor(88)
       "Cooking MC's like a pound of bacon"
   """
   def single_byte_xor(binary, cipher) do
     bytes = byte_size(binary)
-    input = binary |> :binary.decode_unsigned
+    input = binary |> :binary.decode_unsigned()
     key = :binary.decode_unsigned(for _ <- 1..bytes, into: <<>>, do: <<cipher>>)
-    Bitwise.bxor(input, key) |> :binary.encode_unsigned
+    Bitwise.bxor(input, key) |> :binary.encode_unsigned()
   end
 
   @english_character_freq %{
@@ -113,21 +81,25 @@ defmodule Cryptopals do
   }
 
   def score_binary_for_english(binary) do
-    total = binary
-    |> :binary.bin_to_list()
-    |> Enum.map(fn char -> Map.get(@english_character_freq, char, -10.0) end)
-    |> Enum.sum()
+    total =
+      binary
+      |> :binary.bin_to_list()
+      |> Enum.map(fn char -> Map.get(@english_character_freq, char, -10.0) end)
+      |> Enum.sum()
+
     total / byte_size(binary)
   end
 
   def single_byte_xor_cipher(binary) do
-    candidate = 0..255
-    |> Enum.map(fn char ->
-      output = single_byte_xor(binary, char)
-      score = score_binary_for_english(output)
-      {char, output, score}
-    end)
-    |> Enum.max(fn {_, _, score1}, {_, _, score2} -> score1 > score2 end)
+    candidate =
+      0..255
+      |> Enum.map(fn char ->
+        output = single_byte_xor(binary, char)
+        score = score_binary_for_english(output)
+        {char, output, score}
+      end)
+      |> Enum.max(fn {_, _, score1}, {_, _, score2} -> score1 > score2 end)
+
     {key, output, _} = candidate
     {key, output}
   end
@@ -142,7 +114,7 @@ defmodule Cryptopals do
       {88, "Cooking MC's like a pound of bacon"}
   """
   def hex_single_byte_xor_cipher(hex_string) do
-    hex_string |> hex_to_binary |> single_byte_xor_cipher
+    hex_string |> Cryptopals.decodeHex() |> single_byte_xor_cipher
   end
 
   def is_english(binary) do
@@ -160,7 +132,7 @@ defmodule Cryptopals do
   """
   def detect_single_character_xor_cypher_in_path(path) do
     File.stream!(path)
-    |> Enum.map(&Cryptopals.hex_to_binary/1)
+    |> Enum.map(&Cryptopals.decodeHex/1)
     |> Enum.map(&Cryptopals.single_byte_xor_cipher/1)
     |> Enum.filter(fn {_, output} -> is_english(output) end)
   end
@@ -177,6 +149,7 @@ defmodule Cryptopals do
   def repeating_key_xor(binary, cypher) do
     bytelist = binary |> :binary.bin_to_list()
     cycle = cypher |> :binary.bin_to_list() |> Stream.cycle()
+
     Enum.zip(bytelist, cycle)
     |> Enum.map(fn {left, right} -> Bitwise.bxor(left, right) end)
     |> :binary.list_to_bin()
@@ -195,6 +168,7 @@ defmodule Cryptopals do
   end
 
   defp count_bits(0, acc), do: acc
+
   defp count_bits(n, acc) do
     new_acc = acc + Bitwise.band(n, 1)
     count_bits(Bitwise.bsr(n, 1), new_acc)
@@ -209,13 +183,13 @@ defmodule Cryptopals do
       37
   """
   def bitwise_hamming_distance(left, right) do
-    Enum.zip(left |> :binary.bin_to_list, right |> :binary.bin_to_list)
+    Enum.zip(left |> :binary.bin_to_list(), right |> :binary.bin_to_list())
     |> Enum.map(fn {left, right} -> Bitwise.bxor(left, right) |> count_bits() end)
     |> Enum.sum()
   end
 
   def repeating_key_xor_possible_key_sizes(binary) do
-    2..min(40, floor(byte_size(binary)/2))
+    2..min(40, floor(byte_size(binary) / 2))
     |> Enum.map(fn sz ->
       left = binary_part(binary, 0, sz)
       right = binary_part(binary, sz, sz)
@@ -224,8 +198,10 @@ defmodule Cryptopals do
   end
 
   def repeating_key_xor_detect_key_size(binary) do
-    {key_size, _} = repeating_key_xor_possible_key_sizes(binary)
-    |> Enum.min(fn {_, left}, {_, right} -> left < right end)
+    {key_size, _} =
+      repeating_key_xor_possible_key_sizes(binary)
+      |> Enum.min(fn {_, left}, {_, right} -> left < right end)
+
     key_size
   end
 
@@ -234,7 +210,7 @@ defmodule Cryptopals do
 
   ## Examples
 
-      iex> "1e15090d0442012b170509010a0d6d0402084f0b4f39001e" |> Cryptopals.hex_to_binary() |> Cryptopals.repeating_key_xor("Mellon!")
+      iex> "1e15090d0442012b170509010a0d6d0402084f0b4f39001e" |> Cryptopals.decodeHex() |> Cryptopals.repeating_key_xor("Mellon!")
       "Speak, friend, and enter"
   """
   def repeating_key_xor_cipher(binary) do
@@ -243,21 +219,22 @@ defmodule Cryptopals do
   end
 
   def repeating_key_xor_cipher(binary, key_size) do
-    key = 0..key_size-1
-    |> Enum.map(fn chunk_index ->
-      binary
-      |> :binary.bin_to_list()
-      |> Enum.with_index()
-      |> Enum.filter(fn {_, index} -> rem(index, key_size) == chunk_index end)
+    key =
+      0..(key_size - 1)
+      |> Enum.map(fn chunk_index ->
+        binary
+        |> :binary.bin_to_list()
+        |> Enum.with_index()
+        |> Enum.filter(fn {_, index} -> rem(index, key_size) == chunk_index end)
+        |> Enum.map(fn {byte, _} -> byte end)
+        |> :binary.list_to_bin()
+        |> single_byte_xor_cipher()
+      end)
       |> Enum.map(fn {byte, _} -> byte end)
       |> :binary.list_to_bin()
-      |> single_byte_xor_cipher()
-    end)
-    |> Enum.map(fn {byte, _} -> byte end)
-    |> :binary.list_to_bin()
-  {key, repeating_key_xor(binary, key)}
-  end
 
+    {key, repeating_key_xor(binary, key)}
+  end
 
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
@@ -273,13 +250,10 @@ defmodule Cryptopals do
   """
   def main(args) do
     case args do
-      ["hex_to_base64" | options] ->
-        for input <- options do
-          IO.puts(Cryptopals.hex_to_base64(input))
-        end
       [unknown | _] ->
         IO.puts(IO.ANSI.red() <> "error: " <> IO.ANSI.reset() <> "unknown command: #{unknown}.")
         usage()
+
       [] ->
         usage()
     end
