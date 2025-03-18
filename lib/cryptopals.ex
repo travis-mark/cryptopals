@@ -236,6 +236,34 @@ defmodule Cryptopals do
     {key, repeating_key_xor(binary, key)}
   end
 
+  @doc """
+  Wrapper around AES-128 in ECB mode, for later exercises. Swaps argument order to simplify piping.
+  """
+  def aes_128_ecb(ciphertext, key) do
+    :crypto.crypto_one_time(:aes_128_ecb, key, <<>>, ciphertext, false)
+  end
+
+  @doc """
+  Test a text for possible encryption by ECB by looking for duplicate blocks.
+  """
+  def duplicate_blocks(binary, block_size \\ 16) do
+    binary
+    |> :binary.bin_to_list()
+    |> Enum.chunk_every(block_size)
+    |> Enum.frequencies()
+    |> Enum.filter(fn {_, count} -> count > 1 end)
+  end
+
+  def duplicate_blocks?(binary, block_size \\ 16) do
+    !Enum.empty?(duplicate_blocks(binary, block_size))
+  end
+
+  def y() do
+    File.stream!("priv/8.txt")
+    |> Enum.with_index()
+    |> Enum.filter(fn {line, _} -> duplicate_blocks?(line) end)
+  end
+
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
   end
