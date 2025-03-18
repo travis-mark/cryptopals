@@ -21,6 +21,15 @@ defmodule Cryptopals do
   end
 
   @doc """
+  Convert base64 to binary for processing.
+  """
+  def base64_to_binary(hex_string) do
+    hex_string
+    |> String.replace(~r/\s/, "")
+    |> Base.decode64!()
+  end
+
+  @doc """
   [Set 1 / Challenge 1](https://cryptopals.com/sets/1/challenges/1)
   Convert a hex string to a base64 one.
 
@@ -86,6 +95,7 @@ defmodule Cryptopals do
     ?k => 0.772,
     ?l => 4.025,
     ?m => 2.406,
+    ?M => 2.406,
     ?n => 6.749,
     ?o => 7.507,
     ?p => 1.929,
@@ -110,17 +120,7 @@ defmodule Cryptopals do
     total / byte_size(binary)
   end
 
-  @doc """
-  [Set 1 / Challenge 3](https://cryptopals.com/sets/1/challenges/3)
-  Given a hex encoded string, test for a single character key.
-
-  ## Examples
-
-      iex> Cryptopals.single_byte_xor_cipher("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
-      {88, "Cooking MC's like a pound of bacon"}
-  """
-  def single_byte_xor_cipher(hex_string) do
-    binary = hex_string |> hex_to_binary
+  def single_byte_xor_cipher(binary) do
     candidate = 0..255
     |> Enum.map(fn char ->
       output = single_byte_xor(binary, char)
@@ -130,6 +130,19 @@ defmodule Cryptopals do
     |> Enum.max(fn {_, _, score1}, {_, _, score2} -> score1 > score2 end)
     {key, output, _} = candidate
     {key, output}
+  end
+
+  @doc """
+  [Set 1 / Challenge 3](https://cryptopals.com/sets/1/challenges/3)
+  Given a hex encoded string, test for a single character key.
+
+  ## Examples
+
+      iex> Cryptopals.hex_single_byte_xor_cipher("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+      {88, "Cooking MC's like a pound of bacon"}
+  """
+  def hex_single_byte_xor_cipher(hex_string) do
+    hex_string |> hex_to_binary |> single_byte_xor_cipher
   end
 
   def is_english(binary) do
@@ -147,6 +160,7 @@ defmodule Cryptopals do
   """
   def detect_single_character_xor_cypher_in_path(path) do
     File.stream!(path)
+    |> Enum.map(&Cryptopals.hex_to_binary/1)
     |> Enum.map(&Cryptopals.single_byte_xor_cipher/1)
     |> Enum.filter(fn {_, output} -> is_english(output) end)
   end
@@ -167,6 +181,83 @@ defmodule Cryptopals do
     |> Enum.map(fn {left, right} -> Bitwise.bxor(left, right) end)
     |> :binary.list_to_bin()
   end
+
+  @doc """
+  Count the bits of an integer
+
+  ## Examples
+
+      iex> Cryptopals.count_bits(3)
+      2
+  """
+  def count_bits(n) do
+    count_bits(n, 0)
+  end
+
+  defp count_bits(0, acc), do: acc
+  defp count_bits(n, acc) do
+    new_acc = acc + Bitwise.band(n, 1)
+    count_bits(Bitwise.bsr(n, 1), new_acc)
+  end
+
+  @doc """
+  Hamming distance between the bits of two strings
+
+  ## Examples
+
+      iex> Cryptopals.bitwise_hamming_distance("this is a test", "wokka wokka!!!")
+      37
+  """
+  def bitwise_hamming_distance(left, right) do
+    Enum.zip(left |> :binary.bin_to_list, right |> :binary.bin_to_list)
+    |> Enum.map(fn {left, right} -> Bitwise.bxor(left, right) |> count_bits() end)
+    |> Enum.sum()
+  end
+
+  def repeating_key_xor_possible_key_sizes(binary) do
+    2..min(40, floor(byte_size(binary)/2))
+    |> Enum.map(fn sz ->
+      left = binary_part(binary, 0, sz)
+      right = binary_part(binary, sz, sz)
+      {sz, Cryptopals.bitwise_hamming_distance(left, right) / sz}
+    end)
+  end
+
+  def repeating_key_xor_detect_key_size(binary) do
+    {key_size, _} = repeating_key_xor_possible_key_sizes(binary)
+    |> Enum.min(fn {_, left}, {_, right} -> left < right end)
+    key_size
+  end
+
+  @doc """
+  Given an encoded binary, test for a repeating key.
+
+  ## Examples
+
+      iex> "1e15090d0442012b170509010a0d6d0402084f0b4f39001e" |> Cryptopals.hex_to_binary() |> Cryptopals.repeating_key_xor("Mellon!")
+      "Speak, friend, and enter"
+  """
+  def repeating_key_xor_cipher(binary) do
+    key_size = repeating_key_xor_detect_key_size(binary)
+    repeating_key_xor_cipher(binary, key_size)
+  end
+
+  def repeating_key_xor_cipher(binary, key_size) do
+    key = 0..key_size-1
+    |> Enum.map(fn chunk_index ->
+      binary
+      |> :binary.bin_to_list()
+      |> Enum.with_index()
+      |> Enum.filter(fn {_, index} -> rem(index, key_size) == chunk_index end)
+      |> Enum.map(fn {byte, _} -> byte end)
+      |> :binary.list_to_bin()
+      |> single_byte_xor_cipher()
+    end)
+    |> Enum.map(fn {byte, _} -> byte end)
+    |> :binary.list_to_bin()
+  {key, repeating_key_xor(binary, key)}
+  end
+
 
   def usage do
     IO.puts(IO.ANSI.yellow() <> "TODO: USAGE. Check source for now.")
