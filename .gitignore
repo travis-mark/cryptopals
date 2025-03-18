@@ -24,3 +24,6 @@ cryptopals-*.tar
 
 # Escript binary
 cryptopals
+
+# macOS
+.DS_Store
