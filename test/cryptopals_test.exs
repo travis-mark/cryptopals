@@ -43,12 +43,21 @@ defmodule CryptopalsTest do
     # Line 133 (zero-based index)
     expected = 132
 
-    {_, output} =
+    [{_, output}] =
       File.stream!("priv/8.txt")
       |> Enum.with_index()
-      |> Enum.filter(fn {line, _} -> duplicate_blocks?(line) end)
+      |> Enum.filter(fn {line, _} -> Cryptopals.duplicate_blocks?(line) end)
 
     assert expected == output,
            "Detect AES in ECB mode failed, got: #{output}, expected: #{expected}"
+  end
+
+  # https://cryptopals.com/sets/2/challenges/9
+  test "Implement PKCS#7 padding" do
+    input = "YELLOW SUBMARINE"
+    expected = "YELLOW SUBMARINE\x04\x04\x04\x04"
+    output = Cryptopals.pad_crypto_message(input, 20)
+    assert expected == output,
+           "Implement PKCS#7 padding, got: #{output}, expected: #{expected}"
   end
 end

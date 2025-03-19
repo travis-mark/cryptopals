@@ -258,10 +258,13 @@ defmodule Cryptopals do
     !Enum.empty?(duplicate_blocks(binary, block_size))
   end
 
-  def y() do
-    File.stream!("priv/8.txt")
-    |> Enum.with_index()
-    |> Enum.filter(fn {line, _} -> duplicate_blocks?(line) end)
+  @doc """
+  Add [PKCS #7](https://en.wikipedia.org/wiki/PKCS_7) padding to a message.
+  """
+  def pad_crypto_message(binary, block_size \\ 16) do
+    message_size = byte_size(binary)
+    padding_size = block_size - rem(message_size, block_size)
+    binary <> for _ <- 1..padding_size, into: <<>>, do: <<padding_size>>
   end
 
   def usage do
