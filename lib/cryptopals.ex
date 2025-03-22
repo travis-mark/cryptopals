@@ -239,10 +239,39 @@ defmodule Cryptopals do
   @doc """
   Wrapper around AES-128 in ECB mode, for later exercises. Swaps argument order to simplify piping.
   """
-  def aes_128_ecb(ciphertext, key) do
-    :crypto.crypto_one_time(:aes_128_ecb, key, <<>>, ciphertext, false)
+  def aes_128_ecb(ciphertext, key, encrypt \\ false) do
+    :crypto.crypto_one_time(:aes_128_ecb, key, <<>>, ciphertext, encrypt)
   end
 
+  def aes_128_ecb_cbc(ciphertext, key, iv, true) do
+    case ciphertext do
+      <<block::binary-size(16)>> ->
+        aes_128_ecb(fixedXor(block, iv), key, true)
+      <<block::binary-size(16), rest::binary>> ->
+        result = aes_128_ecb(fixedXor(block, iv), key, true)
+        result <> aes_128_ecb_cbc(rest, key, result, true)
+    end
+  end
+
+  def aes_128_ecb_cbc(ciphertext, key, iv, false) do
+    size = byte_size(ciphertext)
+    case size do
+      16 -> aes_128_ecb(ciphertext, key, false) |> fixedXor(iv)
+      32 ->
+        first = binary_part(ciphertext, 0, 16)
+        last = binary_part(ciphertext, 16, 16)
+        (aes_128_ecb(first, key, false) |> fixedXor(iv))
+        <> (aes_128_ecb(last, key, false) |> fixedXor(first))
+      _ ->
+        butlast = binary_part(ciphertext, 0, size-16)
+        peek_next_last = binary_part(ciphertext, size-32, 16)
+        last = binary_part(ciphertext, size-16, 16)
+        aes_128_ecb_cbc(butlast, key, iv, false)
+        <> (aes_128_ecb(last, key, false) |> fixedXor(peek_next_last))
+    end
+  end
+
+  @spec duplicate_blocks(binary(), pos_integer()) :: list()
   @doc """
   Test a text for possible encryption by ECB by looking for duplicate blocks.
   """

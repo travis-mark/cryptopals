@@ -57,7 +57,21 @@ defmodule CryptopalsTest do
     input = "YELLOW SUBMARINE"
     expected = "YELLOW SUBMARINE\x04\x04\x04\x04"
     output = Cryptopals.pad_crypto_message(input, 20)
+
     assert expected == output,
            "Implement PKCS#7 padding, got: #{output}, expected: #{expected}"
+  end
+
+  # https://cryptopals.com/sets/2/challenges/10
+  test "Implement CBC mode" do
+    ciphertext = File.read!("priv/10.txt") |> String.replace(~r/\s/, "") |> Base.decode64!()
+    key = "YELLOW SUBMARINE"
+    iv0 = <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
+    decoded = Cryptopals.aes_128_ecb_cbc(ciphertext, key, iv0, false)
+    line1 = decoded |> String.split("\n", parts: 2) |> List.first()
+    expected = "I'm back and I'm ringin' the bell "
+
+    assert line1 == expected,
+           "Implement CBC mode failed, got: #{line1}, expected: #{expected}"
   end
 end
